@@ -285,6 +285,14 @@ axisvalues(A::AxisArray) = axisvalues(A.axes...)
 axisvalues() = ()
 axisvalues(ax::Axis, axs::Axis...) = tuple(ax.val, axisvalues(axs...)...)
 
+@generated function axisvalues{T,N,D,Ax,Aname}(A::AxisArray{T,N,D,Ax}, ax::Axis{Aname})
+    d = axisdim(A, ax)
+    At = Ax.parameters[d].parameters[2]
+    quote
+        (axes(A)[$d].val)::$At
+    end
+end
+
 @doc """
     axes(A::AxisArray) -> (Axis...)
     axes(A::AxisArray, ax::Axis) -> Axis
