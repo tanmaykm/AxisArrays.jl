@@ -2,7 +2,8 @@ module AxisArrays
 
 using Requires, Tuples, RangeArrays
 
-export AxisArray, Axis, Interval, axisnames, axisvalues, axisdim, axes, .., atindex, shiftaxis, lead, lag
+export AxisArray, Axis, Interval, axisnames, axisvalues, axisdim, axes, .., atindex,
+        shiftaxis, lead, lag, window, TumblingWindow, SlidingWindow, moving
 
 include("core.jl")
 include("intervals.jl")
