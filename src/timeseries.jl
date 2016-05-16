@@ -71,7 +71,8 @@ end
 
         ax1, ax2 = extrema(axes(data, Aw).val)
         newax = Aw(ax1:wstep:ax2)
-        res = similar(data, newax)
+        S = eltype(fn(data[1:2].data))
+        res = similar(data, S, newax)
         axvals = Array(Any, $N)
     end
 
@@ -80,9 +81,11 @@ end
         axvals[$axdim] = Colon()
         dtmp = data[$(axargs...)]
         dvec = AxisArray(reshape(dtmp.data, length(dtmp.data)), axes(data)[$axdim])
+        #dvecd = dvec.data
         Atype = Axis{$axnames[$axdim]}
         for $v in 1:length(newax)
             wdata = dvec[Atype(wp(wspec, newax.val[$v]))].data
+            #wdata = dvecd[to_index(dvec, Atype(wp(wspec, newax.val[$v])))...]
             axvals[$axdim] = $v
             res[$(axargs...)] = fn(wdata)
         end
@@ -102,3 +105,49 @@ end
 end
 
 moving(data, ax::Axis, fn) = window(data, SlidingWindow(ax), fn)
+
+@generated function accumulate{T,N,D,Ax,name}(data::AxisArray{T,N,D,Ax}, ax::Type{Axis{name}}, fn)
+    axdim = axisdim(AxisArray{T,N,D,Ax}, Axis{name})
+    iterdims = deleteat!([1:N;], axdim)
+    axnames = axisnames(AxisArray{T,N,D,Ax})
+    # ref: https://github.com/JuliaLang/julia/issues/13359
+    axargs = [:(axvals[$d]) for d = 1:N]
+
+    X = quote
+        S = eltype(fn(data[1:2].data))
+        res = similar(data, S)
+        axvals = Array(Any, $N)
+        axvals[$axdim] = Colon()
+    end
+
+    v = gensym("i_$axdim")
+    L = quote
+        dtmp = data[$(axargs...)]
+        dvec = AxisArray(reshape(dtmp.data, length(dtmp.data)), axes(data)[$axdim])
+        res[$(axargs...)] = fn(dvec.data)
+    end
+
+    for idx in reverse(iterdims)
+        v = gensym("i_$idx")
+        L = :(for $v in 1:length(axes(data, Axis{$axnames[$idx]}))
+                axvals[$idx] = $v
+                $L
+            end)
+    end
+    push!(X.args, L)
+    push!(X.args, :(return res))
+   
+    X 
+end
+
+simpleret{T}(data1::T, data2::T) = (data2-data1)/data2
+logret{T}(data1::T, data2::T) = ln(data2/data1)
+simpleret{T}(data::AbstractVector{T}) = length(data) > 1 ? simpleret(data[1], data[2]) : 0
+logret{T}(data::AbstractVector{T}) = length(data) > 1 ? logret(data[1], data[2]) : 0
+function percentchange{name}(data, Ax::Type{Axis{name}}, method=:simple)
+    ax = axes(data, Ax)
+    D = eltype(typeof(ax).parameters[2])
+    wspec = SlidingWindow(Axis{name}(D(2)))
+    pc = window(data, wspec, (method === :simple) ? simpleret : logret)
+    lag(pc, Axis{name}(D(1)))
+end
