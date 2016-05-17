@@ -70,6 +70,7 @@ end
         Aw = Axis{name}
 
         ax1, ax2 = extrema(axes(data, Aw).val)
+        @show ax1, ax2, wstep, wspec
         newax = Aw(ax1:wstep:ax2)
         S = eltype(fn(data[1:2].data))
         res = similar(data, S, newax)
@@ -105,8 +106,9 @@ end
 end
 
 moving(data, ax::Axis, fn) = window(data, SlidingWindow(ax), fn)
+collapse(data, ax::Axis, fn) = window(data, TumblingWindow(ax), fn)
 
-@generated function accumulate{T,N,D,Ax,name}(data::AxisArray{T,N,D,Ax}, ax::Type{Axis{name}}, fn)
+@generated function resample{T,N,D,Ax,name,B}(data::AxisArray{T,N,D,Ax}, toaxis::Axis{name,B}, fn)
     axdim = axisdim(AxisArray{T,N,D,Ax}, Axis{name})
     iterdims = deleteat!([1:N;], axdim)
     axnames = axisnames(AxisArray{T,N,D,Ax})
@@ -115,7 +117,7 @@ moving(data, ax::Axis, fn) = window(data, SlidingWindow(ax), fn)
 
     X = quote
         S = eltype(fn(data[1:2].data))
-        res = similar(data, S)
+        res = similar(data, S, toaxis)
         axvals = Array(Any, $N)
         axvals[$axdim] = Colon()
     end
@@ -139,6 +141,22 @@ moving(data, ax::Axis, fn) = window(data, SlidingWindow(ax), fn)
    
     X 
 end
+mapaxis{name}(data::AxisArray, ::Type{Axis{name}}, fn) = resample(data, axes(data, Axis{name}), fn)
+
+function per{name,B<:Base.Dates.Period}(data::AxisArray, toperiod::Axis{name,B}, fn)
+    pd = toperiod.val
+    ax1, ax2 = extrema(axes(data, Axis{name}).val)
+    if isa(pd, Base.Dates.DatePeriod)
+        newax1 = isa(ax1, Base.Dates.DateTime) ? Date(ax1) : ax1
+        newax2 = isa(ax2, Base.Dates.DateTime) ? Date(ax2) : ax2
+    elseif isa(pd, Base.Dates.TimePeriod)
+        newax1 = isa(ax1, Base.Dates.Date) ? DateTime(ax1) : ax1
+        newax2 = isa(ax2, Base.Dates.Date) ? DateTime(ax2)+Base.Dates.Hour(23) : ax2
+    else
+        throw(ArgumentError("period must be a DatePeriod or TimePeriod"))
+    end
+    resample(data, Axis{name}(newax1:pd:newax2), fn)
+end
 
 simpleret{T}(data1::T, data2::T) = (data2-data1)/data2
 logret{T}(data1::T, data2::T) = ln(data2/data1)
@@ -146,7 +164,7 @@ simpleret{T}(data::AbstractVector{T}) = length(data) > 1 ? simpleret(data[1], da
 logret{T}(data::AbstractVector{T}) = length(data) > 1 ? logret(data[1], data[2]) : 0
 function percentchange{name}(data, Ax::Type{Axis{name}}, method=:simple)
     ax = axes(data, Ax)
-    D = eltype(typeof(ax).parameters[2])
+    D = typeof(ax[1]-ax[1])
     wspec = SlidingWindow(Axis{name}(D(2)))
     pc = window(data, wspec, (method === :simple) ? simpleret : logret)
     lag(pc, Axis{name}(D(1)))

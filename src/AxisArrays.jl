@@ -3,7 +3,7 @@ module AxisArrays
 using Requires, Tuples, RangeArrays
 
 export AxisArray, Axis, Interval, axisnames, axisvalues, axisdim, axes, .., atindex,
-        shiftaxis, lead, lag, window, TumblingWindow, SlidingWindow, moving, accumulate, percentchange
+        shiftaxis, lead, lag, window, TumblingWindow, SlidingWindow, moving, collapse, resample, percentchange, mapaxis, per
 
 include("core.jl")
 include("intervals.jl")
