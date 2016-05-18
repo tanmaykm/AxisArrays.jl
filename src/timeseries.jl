@@ -169,3 +169,38 @@ function percentchange{name}(data, Ax::Type{Axis{name}}, method=:simple)
     pc = window(data, wspec, (method === :simple) ? simpleret : logret)
     lag(pc, Axis{name}(D(1)))
 end
+
+function Base.cat{T,N,D,Ax,name}(ax::Type{Axis{name}}, A::AxisArray{T,N,D,Ax}, B::AxisArray{T,N,D,Ax})
+    d = axisdim(A, ax)
+    newaxes = Any[axes(A)...]
+    newaxes[d] = Axis{name}(vcat(axes(A, ax).val, axes(B, ax).val))
+    AxisArray(cat(d, A.data, B.data), newaxes...)
+end
+
+import Base: permutedims
+function permutedims{T,N,D,Ax,B}(A::AxisArray{T,N,D,Ax}, ax::NTuple{N,B})
+    if B <: Int
+        return AxisArray(permutedims(A.data, ax), axes(A)[[ax...]]...)
+    else
+        return permutedims(A, tuple([axisdim(A, a) for a in ax]...))
+    end
+end
+
+import Base: merge
+function merge{T,N,D,Ax}(ax::Axis, arrays::AxisArray{T,N,D,Ax}...)
+    (length(arrays) > 1) || throw(ArgumentError("more than one array required for a merge"))
+    (length(arrays) == length(ax)) || throw(ArgumenrError("length of axis does not match number of arrays provided"))
+    f = arrays[1]
+    for a in arrays[2:end]
+        (size(a) == size(f)) || throw(ArgumentError("arrays are not of same size"))
+    end
+    d = similar(f.data, size(f)..., length(ax))
+    c = Array(Any, N+1)
+    c[1:N] = Colon()
+    for a in 1:length(ax)
+        c[N+1] = a
+        d[c...] = arrays[a]
+    end
+
+    AxisArray(d, axes(f)..., ax)
+end
