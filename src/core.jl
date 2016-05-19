@@ -165,9 +165,11 @@ AxisArray(A::AbstractArray, axs::Axis...) = AxisArray(A, axs)
                 throw(ArgumentError("the length of each axis must match the corresponding size of data"))
             end
         end
+        #=
         if length(unique(axisnames($(ax.args...)))) != N
             throw(ArgumentError("axis names $(axisnames($(ax.args...))) must be unique"))
         end
+        =#
         $(AxisArray{T,N,A,Ax})(A, $ax)
     end
 end

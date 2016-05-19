@@ -70,7 +70,6 @@ end
         Aw = Axis{name}
 
         ax1, ax2 = extrema(axes(data, Aw).val)
-        @show ax1, ax2, wstep, wspec
         newax = Aw(ax1:wstep:ax2)
         S = eltype(fn(data[1:2].data))
         res = similar(data, S, newax)
