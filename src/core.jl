@@ -252,13 +252,19 @@ end
 # much more difficult.
 function Base.writemime{T,N}(io::IO, m::MIME"text/plain", A::AxisArray{T,N})
     println(io, "$N-dimensional AxisArray{$T,$N,...} with axes:")
-    for (name, val) in zip(axisnames(A), axisvalues(A))
-        print(io, "    :$name, ")
+    writemime(io, m, axes(A), "    ")
+    print(io, "And data, a ")
+    writemime(io, m, A.data)
+end
+
+function Base.writemime{N}(io::IO, m::MIME"text/plain", ax::NTuple{N,Axis}, indent::AbstractString="")
+    for x in ax
+        name = typeof(x).parameters[1]
+        val = x.val
+        print(io, "$indent:$name, ")
         Base.showlimited(io, val)
         println(io)
     end
-    print(io, "And data, a ")
-    writemime(io, m, A.data)
 end
 
 # Custom methods specific to AxisArrays
