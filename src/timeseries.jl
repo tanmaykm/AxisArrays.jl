@@ -142,6 +142,7 @@ collapse(data, ax::Axis, fn) = window(data, TumblingWindow(ax), fn)
 end
 mapaxis{name}(data::AxisArray, ::Type{Axis{name}}, fn) = resample(data, axes(data, Axis{name}), fn)
 
+per{name,B}(data::AxisArray, newax::Axis{name,B}, fn) = resample(data, newax, fn)
 function per{name,B<:Base.Dates.Period}(data::AxisArray, toperiod::Axis{name,B}, fn)
     pd = toperiod.val
     ax1, ax2 = extrema(axes(data, Axis{name}).val)
