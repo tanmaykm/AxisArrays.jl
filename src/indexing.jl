@@ -39,7 +39,7 @@ Base.setindex!(A::AxisArray, v, idx::Base.IteratorsMD.CartesianIndex) = (A.data[
     for i = 1:newdims-droplastaxis
         if idxs[i] <: AxisArray
             idxnames = axisnames(idxs[i])
-            push!(axes.args, :($(Axis{symbol(names[i], "_", idxnames[1])})(idxs[$i].axes[1].val)))
+            push!(axes.args, :($(Axis{Symbol(names[i], "_", idxnames[1])})(idxs[$i].axes[1].val)))
         elseif idxs[i] <: Real
             idx = :(idxs[$i]:idxs[$i])
             push!(axes.args, :($(Axis{names[i]})(A.axes[$i].val[$idx])))
@@ -82,13 +82,13 @@ end
         if I[d] <: AxisArray
             idxnames = axisnames(I[d])
             for i=1:ndims(I[d])
-                push!(newaxes, :($(Axis{symbol(names[d], "_", idxnames[i])})(I[$d].axes[$i].val)))
+                push!(newaxes, :($(Axis{Symbol(names[d], "_", idxnames[i])})(I[$d].axes[$i].val)))
             end
         elseif I[d] <: Idx
             push!(newaxes, :($(Axis{names[d]})(A.axes[$d].val[J[$d]])))
         elseif I[d] <: AbstractArray
             for i=1:ndims(I[d])
-                push!(newaxes, :($(Axis{symbol(names[d], "_", i)})(1:size(I[$d], $i))))
+                push!(newaxes, :($(Axis{Symbol(names[d], "_", i)})(1:size(I[$d], $i))))
             end
         end
     end

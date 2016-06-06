@@ -146,7 +146,7 @@ immutable AxisArray{T,N,D,Ax} <: AbstractArray{T,N}
     AxisArray(data::AbstractArray, axs) = new{T,N,D,Ax}(data, axs)
 end
 #
-_defaultdimname(i) = i == 1 ? (:row) : i == 2 ? (:col) : i == 3 ? (:page) : symbol(:dim_, i)
+_defaultdimname(i) = i == 1 ? (:row) : i == 2 ? (:col) : i == 3 ? (:page) : Symbol(:dim_, i)
 AxisArray(A::AbstractArray, axs::Axis...) = AxisArray(A, axs)
 @generated function AxisArray{T,N,L}(A::AbstractArray{T,N}, axs::NTuple{L,Axis})
     ax = Expr(:tuple)
